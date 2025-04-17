@@ -1,9 +1,12 @@
 import { ReactNode } from 'react'
+import Script from 'next/script'
+import { BrandProvider } from '@/context/brand'
 import type { Metadata } from 'next';
-import '@/styles/global.css.ts';
-import { resolveTheme } from '@/themes'
+import { getBrandConfig } from '@/utils/getBrandConfig'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import '@/styles/global.css.ts';
+import { resolveTheme } from '@/themes'
 
 export const metadata: Metadata = {
     title: "Create Next App",
@@ -22,14 +25,34 @@ export default async function BrandLayout({
     params
 }: LayoutParams) {
     const resolvedParams = await params;
+    const config = getBrandConfig(resolvedParams.brand)
     const themeClass = resolveTheme(resolvedParams.brand);
 
     return (
         <html lang="en">
+            <head>
+                <>
+                    {/* Google Tag Manager */}
+                    <Script
+                        src={`https://www.googletagmanager.com/gtm.js?id=${config.gtmId}`}
+                        strategy="afterInteractive"
+                    />
+                    <Script id="gtm-init" strategy="afterInteractive">
+                        {`
+                        window.dataLayer = window.dataLayer || [];
+                        function gtag(){dataLayer.push(arguments);}
+                        gtag('js', new Date());
+                        gtag('config', '${config.gtmId}');
+                        `}
+                    </Script>
+                </>
+            </head>
             <body className={themeClass}>
-                <Header brand={resolvedParams.brand} />
-                {children}
-                <Footer brand={resolvedParams.brand} />
+                <BrandProvider brand={resolvedParams.brand}>
+                    <Header />
+                    <main>{children}</main>
+                    <Footer />
+                </BrandProvider>
             </body>
         </html>
     );
